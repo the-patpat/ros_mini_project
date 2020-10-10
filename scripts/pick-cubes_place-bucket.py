@@ -21,6 +21,15 @@ def refresh_environment(msg):
     # TODO maybe change this to a parameter approach
     global gazebo_environment
     gazebo_environment = msg
+    z_positions = []
+    for index, name in enumerate(msg.name):
+        if "cube" in name:
+            z_positions.append(msg.pose[index].position.z)
+    with open('cube_pos', 'ab+') as f:
+        for position in z_positions:
+            f.write('%f;' % position)
+        f.write('\n')
+        f.close()
 
 def move_group_initialize(name):
     # Initialize moveit_commander 
@@ -41,9 +50,13 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
     # First step, move there with a simple pose, no trajectory
     # hand limb frame has x-axis as approching axis
 
-    # Get the position of the object
+    # Get the current pose of the end effector and move there
+    # to avoid a non-functioning gripper because of residual movement
     gazebo_environment_snap = gazebo_environment
     goal = group.get_current_pose().pose
+    move_group.set_pose_target(goal)
+    move_group.go(wait=True)
+
     goal = gazebo_environment_snap.pose[gazebo_environment_snap.name.index(name)]
     
     print "Cube position before changing stuff %s" % goal
@@ -105,15 +118,54 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
 
     close_gripper()
     rospy.sleep(2.)
+    
+
+
+    waypoints = []
+    # Move back to where we came from
+    waypoints.append(group.get_current_pose().pose)
+    waypoints.append(group.get_current_pose().pose)
+    waypoints[1].position.z += 0.3
+
+    print "Move back to where we came from: %s" % waypoints
+
+    # Compute the cartesian path and execute it
+    (plan1, fraction) = group.compute_cartesian_path(
+                                      waypoints,   # waypoints to follow
+                                      0.01,        # eef_step
+                                      0.0)         # jump_threshold
+    #print plan1
+    group.execute(plan1, wait=True)
 
 
 
 
 
 
-def place_object_in_scene(scene, move_group, name):
+
+def place_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_publisher=0):
     # Code for placing an object in a scene
-    print "hello world"
+    gazebo_environment_snap = gazebo_environment
+    goal = group.get_current_pose().pose
+    move_group.set_pose_target(goal)
+    move_group.go(wait=True)
+
+    
+    # Move above the bucket
+    goal = gazebo_environment_snap.pose[gazebo_environment_snap.name.index(name)]
+    goal.position.z += 0.45
+    goal.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(0,-0.5*math.pi,0))
+    move_group.set_pose_target(goal)
+    move_group.go(wait=True)
+
+    # Open the gripper
+    open_gripper()
+
+    #Move to current position to stop residual movement
+    move_group.stop()
+    #move_group.set_pose_target(move_group.get_current_pose().pose)
+    #move_group.go(wait=True)
+
 
 def add_object_to_planning_scene(scene, name, pose, size):
     # Add object to moveit planning scene (collision avoidance)
@@ -137,13 +189,21 @@ if __name__ == '__main__':
             if "bucket" in name:
                 p.pose = gazebo_environment_snap.pose[index]
                 print "adding %s at \n%s" % (name, p.pose)
-                scene.add_mesh(name, p, '/home/pat/catkin_ws/src/hello_ros/urdf/bucket.dae')
+                scene.add_box(name, p, (0.2,0.2,0.2))
             if "cube" in name:
                 p.pose = gazebo_environment_snap.pose[index]
                 print "adding %s at \n%s" % (name , p.pose)
                 scene.add_box(name, p, (0.05,0.05,0.05))
-        pick_object_in_scene(scene, group, "cube0", robot, display_trajectory_publisher)
-
+        
+        for index, name in enumerate(gazebo_environment_snap.name):
+            if "cube" in name:
+                pick_object_in_scene(scene, group, name, robot, display_trajectory_publisher)
+                place_object_in_scene(scene, group, "bucket", robot, display_trajectory_publisher)
+        group.stop()
     except rospy.ROSInterruptException:
         pass
+    except moveit_commander.MoveItCommanderException as e:
+        print "Exception: %s" % e 
+        pass
+    
         
