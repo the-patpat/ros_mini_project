@@ -25,7 +25,6 @@ def close_gripper():
   pub = rospy.Publisher("/jaco/joint_control", JointState, queue_size=1)
  
   currentJointState = rospy.wait_for_message("/joint_states",JointState)
-  print 'Received!'
   currentJointState.header.stamp = rospy.get_rostime()
   tmp = 0.7
   #tmp_tuple=tuple([tmp] + list(currentJointState.position[1:]))
@@ -33,10 +32,8 @@ def close_gripper():
   rate = rospy.Rate(10) # 10hz
   for i in range(3):
     pub.publish(currentJointState)
-    print 'Published!'
     rate.sleep()
  
-  print 'end!'
 
 if __name__ == '__main__':
   rospy.init_node('test_publish')
