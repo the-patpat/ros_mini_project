@@ -21,16 +21,7 @@ def refresh_environment(msg):
     # TODO maybe change this to a parameter approach
     global gazebo_environment
     gazebo_environment = msg
-    z_positions = []
-    for index, name in enumerate(msg.name):
-        if "cube" in name:
-            z_positions.append(msg.pose[index].position.z)
-    with open('cube_pos', 'ab+') as f:
-        for position in z_positions:
-            f.write('%f;' % position)
-        f.write('\n')
-        f.close()
-
+    
 def move_group_initialize(name):
     # Initialize moveit_commander 
     moveit_commander.roscpp_initialize(sys.argv)
@@ -50,10 +41,13 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
     # First step, move there with a simple pose, no trajectory
     # hand limb frame has x-axis as approching axis
 
-    # Get the current pose of the end effector and move there
-    # to avoid a non-functioning gripper because of residual movement
+
+    # Get current environment 
     print "[%f]pick_object_in_scene: Stopping residual movement to start picking process" % rospy.get_time()
     gazebo_environment_snap = gazebo_environment
+    
+ 
+    # to avoid a non-functioning gripper because of residual movement
     goal = group.get_current_pose().pose
     move_group.set_pose_target(goal)
     move_group.go(wait=True)
@@ -64,9 +58,18 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
     goal = group.get_current_pose().pose
     move_group.set_pose_target(goal)
     move_group.go(wait=True)
-    rospy.sleep(5.)
+    rospy.sleep(2.)
    
+    # Set cube position as preliminary goal (z position will be added)
     goal = gazebo_environment_snap.pose[gazebo_environment_snap.name.index(name)]
+
+    x0, y0 = 0.767, 0.056	
+    xc, yc = goal.position.x, goal.position.y	
+    rsq = 0.5
+    if (xc-x0)**2+(yc-y0)**2 > rsq:	
+        print "[%f]pick_object_in_scene: %s is out of reach" % (rospy.get_time(), name)	
+        return {'success':False, 'reason':'OOR'}
+    
     
     print "[%f]pick_object_in_scene: Got position x:%f y:%f z:%f as %s position" % (rospy.get_time(),goal.position.x, goal.position.y, goal.position.z, name)
         
@@ -89,16 +92,15 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
         display_trajectory.trajectory.append(plan)
         #print "Publishing trajectory"
         display_trajectory_publisher.publish(display_trajectory)
-        rospy.sleep(5.)
+        rospy.sleep(2.)
 
     # Moving to the goal (above the cube) 
-    #print "Moving to goal"
     print "[%f]pick_object_in_scene: Trying to execute movement to setpoint" % (rospy.get_time())
     if move_group.go(wait=True):
         print "[%f]pick_object_in_scene: Movement executed successfully" %(rospy.get_time()) 
     else:
         print "[%f]pick_object_in_scene: Movement execution failed, continuing with next object" %(rospy.get_time()) 
-        return False 
+        return {'success':False, 'reason':'MEF'} 
     
   
 
@@ -122,7 +124,6 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
     print "[%f]pick_object_in_scene: Planning cartesian trajectory to approach %s with desired movement from x1:%f -> x2:%f - y1:%f -> y2:%f - z1:%f -> z2:%f" % (
         rospy.get_time(), name, waypoints[0].position.x, waypoints[1].position.x, 
         waypoints[0].position.y, waypoints[1].position.y, waypoints[0].position.z, waypoints[1].position.z)
-    #print "The waypoints are: %s" %waypoints
 
     # Compute the cartesian path and execute it
     attempts = 0
@@ -132,19 +133,19 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
                                         waypoints,   # waypoints to follow
                                         0.01,        # eef_step
                                         0.0)         # jump_threshold
-        print "[%f] Attempt %d has fraction %f" %(rospy.get_time(), attempts, fraction)
+        print "[%f]pick_object_in_scene: Attempt %d has fraction %f" %(rospy.get_time(), attempts, fraction)
         attempts += 1
     if fraction < 0.85:
         print "[%f]pick_object_in_scene: All three attempts to compute a cartesian path failed. Skipping this cube for now"
-        return False
-    ##print plan1
+        return {'success':False, 'reason':'CMEF'}
     print "[%f]pick_object_in_scene: Trying to execute planned trajectory, fraction is: %f" % (rospy.get_time(), fraction)
+
     if group.execute(plan1, wait=True):
         cur_pos = group.get_current_pose().pose
         print "[%f]pick_object_in_scene: Cartesian Movement successful, current x:%f y:%f z:%f" %(rospy.get_time(), cur_pos.position.x, cur_pos.position.y, cur_pos.position.z) 
     else:
         print "[%f]pick_object_in_scene: Cartesian Movement failed, continuing with next cube" %(rospy.get_time()) 
-        return False
+        return {'success':False, 'reason':'CMEF'}
   
     #Close the gripper and wait a few seconds
 
@@ -153,56 +154,23 @@ def pick_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_
     goal = group.get_current_pose().pose
     move_group.set_pose_target(goal)
     move_group.go(wait=True)
-    rospy.sleep(5.)
-    
+    rospy.sleep(2.)
 
+    return {'success':True, 'reason':''}
 
-    waypoints = []
-    # Move back to where we came from
-    waypoints.append(group.get_current_pose().pose)
-    waypoints.append(group.get_current_pose().pose)
-    waypoints[1].position.z += 0.3
-
-    #print "Move back to where we came from: %s" % waypoints
-
-    # print "[%f]pick_object_in_scene: Planning cartesian trajectory to lift cube up %s with desired movement from x1:%f -> x2:%f - y1:%f -> y2:%f - z1:%f -> z2:%f" % (
-    #     rospy.get_time(), name, waypoints[0].position.x, waypoints[1].position.x,
-    #     waypoints[0].position.y, waypoints[1].position.y, waypoints[0].position.z, waypoints[1].position.z)        
-    # # Compute the cartesian path and execute it
-    # attempts = 0
-    # fraction = 0
-    # while fraction < 0.85 and attempts <= 2:
-    #     (plan1, fraction) = group.compute_cartesian_path(
-    #                                     waypoints,   # waypoints to follow
-    #                                     0.01,        # eef_step
-    #                                     0.0)         # jump_threshold
-    #     print "[%f] Attempt %d has fraction %f" %(rospy.get_time(), attempts, fraction)
-    #     attempts += 1
-    # if fraction < 0.85:
-    #     print "[%f]pick_object_in_scene: All three attempts to compute a cartesian path failed. Skipping this cube for now" % rospy.get_time()
-    #     return False
-    # print "[%f]pick_object_in_scene: Trying to execute planned trajectory" % (rospy.get_time())
-    # ##print plan1
-    # if group.execute(plan1, wait=True): 
-    #     print "[%f]pick_object_in_scene: Cartesian Movement successful" %(rospy.get_time()) 
-    # else:
-    #     print "[%f]pick_object_in_scene: Cartesian Movement failed, continuing with next cube" %(rospy.get_time())
-    #     return False
-    return True
-
-def place_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_publisher=0):
+def place_object_in_scene(scene, move_group, name, robot = 0, display_trajectory_publisher=0, name_picked=""):
     # Code for placing an object in a scene
     print "[%f]place_object_in_scene: Stopping residual movement to start picking process" % rospy.get_time()
     gazebo_environment_snap = gazebo_environment
     goal = group.get_current_pose().pose
     move_group.set_pose_target(goal)
     move_group.go(wait=True)
-    rospy.sleep(5.)
+    rospy.sleep(2.)
 
     
     # Move above the bucket
     goal = gazebo_environment_snap.pose[gazebo_environment_snap.name.index(name)]
-    goal.position.z += 0.45
+    goal.position.z += 0.55
     goal.orientation = geometry_msgs.msg.Quaternion(*tf_conversions.transformations.quaternion_from_euler(0,-0.5*math.pi,0))
     move_group.set_pose_target(goal)
     print "[%f]place_object_in_scene: Position setpoint above %s: x:%f y:%f z:%f" % (rospy.get_time(), name, goal.position.x, goal.position.y, goal.position.z)
@@ -212,77 +180,106 @@ def place_object_in_scene(scene, move_group, name, robot = 0, display_trajectory
         print "[%f]place_object_in_scene: Movement executed successfully" %(rospy.get_time()) 
     else:
         print "[%f]place_object_in_scene: Movement execution failed, continuing with next object" %(rospy.get_time()) 
-        return False 
-    rospy.sleep(5.)
+        return {'success':False, 'reason':''} 
+    rospy.sleep(2.)
     # Open the gripper
     print "[%f]place_object_in_scene: Opening gripper to place cube in bucket" % rospy.get_time()
     open_gripper()
-    rospy.sleep(5.)
+    rospy.sleep(2.)
 
     #Move to current position to stop residual movement
     goal = move_group.get_current_pose().pose
     move_group.set_pose_target(goal)
     move_group.go(wait=True)
-    rospy.sleep(5.)
+    rospy.sleep(2.)
     return True
-
-
-def add_object_to_planning_scene(scene, name, pose, size):
-    # Add object to moveit planning scene (collision avoidance)
-    print "hello world"
-
-
 
 if __name__ == '__main__':
     try:
+
+        # Initializing our script with everything necessary, then sleep for 5 seconds
         robot, scene, group = move_group_initialize("Arm")        
         rospy.Subscriber("/gazebo/model_states", gazebo_msgs.msg.ModelStates, refresh_environment)
         display_trajectory_publisher = rospy.Publisher(
                                       '/move_group/display_planned_path',
                                       moveit_msgs.msg.DisplayTrajectory)
-        #print "Sleeping for 5 Seconds"
+
+        print "[%f]Sleeping for 5 seconds to let model_states be populated, then get positions for MoveIt collision objects" % rospy.get_time()
         rospy.sleep(5)
         gazebo_environment_snap = gazebo_environment
+
+
+        # Add collision objects to the planning scene
         p = geometry_msgs.msg.PoseStamped()
         p.header.frame_id = robot.get_planning_frame()
         for index, name in enumerate(gazebo_environment_snap.name):
             if "bucket" in name:
                 p.pose = gazebo_environment_snap.pose[index]
                 p.pose.position.z += 0.1
-                #print "adding %s at \n%s" % (name, p.pose)
+                # add_mesh added the bucket in the middle of nowhere
                 scene.add_box(name, p, (0.2,0.2,0.2))
             if "cube" in name:
                 p.pose = gazebo_environment_snap.pose[index]
-                #print "adding %s at \n%s" % (name , p.pose)
                 scene.add_box(name, p, (0.05,0.05,0.05))
         
         failed_names = []
-        for index, name in enumerate(gazebo_environment_snap.name):
-            if "cube" in name:
-                if not pick_object_in_scene(scene, group, name, robot, display_trajectory_publisher):
-                    #Could not pick up object
-                    failed_names.append(name)
-                    open_gripper()
-                else:
-                    if not place_object_in_scene(scene, group, "bucket", robot, display_trajectory_publisher):
-                        failed_names.append(name)
-                        open_gripper()
+        redo_names = []
 
-        for i in range(0,2):
-            for name in failed_names:                    
-                if not pick_object_in_scene(scene, group, name, robot, display_trajectory_publisher):
-                    failed_names.append(name)
-                    open_gripper()
+        # Iterate in reverse direction over the objects
+        for index in range(len(gazebo_environment_snap.name)):
+            name = gazebo_environment_snap.name[-1-index]	
+            if "cube" in name:
+                rval = pick_object_in_scene(scene, group, name, robot, display_trajectory_publisher)
+                if not rval['success']:
+                    #Could not pick up object
+                    if rval['reason'] == 'OOR':
+                        #Object is out of reach
+                        failed_names.append(name)
+                    else:
+                        # Other failure, might be because controller failed during execution
+                        redo_names.append(name)
                 else:
-                    if not place_object_in_scene(scene, group, "bucket", robot, display_trajectory_publisher):
+                    if not place_object_in_scene(scene, group, "bucket", robot, display_trajectory_publisher, name):
+                        # Movement execution failed, drop and try again later
+                        redo_names.append(name)
                         open_gripper()
                     else:
-                        failed_names.delete(name)
+                        # Check if box is really in the bucket
+                        gazebo_environment_snap = gazebo_environment
+                        cube_pos = gazebo_environment_snap.pose[gazebo_environment_snap.name.index(name)]
+                        bucket_pos = gazebo_environment_snap.pose[gazebo_environment_snap.name.index("bucket")]
+                        if (cube_pos.position.x - bucket_pos.position.x)**2 + (cube_pos.position.y - bucket_pos.position.y)**2 > 0.14**2:
+                            redo_names.append(name)
+                        else:
+                            print "[%f] Placed %s successfully in bucket" % (rospy.get_time(), name)
+                        
 
+        for i in range(3):
+            for name in redo_names:                    
+                rval = pick_object_in_scene(scene, group, name, robot, display_trajectory_publisher)
+                if not rval['success']:
+                    #Could not pick up object
+                    if rval['reason'] == 'OOR':
+                        #Object is out of reach
+                        if name not in failed_names:
+                            failed_names.append(name)
+                else:
+                    if not place_object_in_scene(scene, group, "bucket", robot, display_trajectory_publisher, name):
+                        # Movement execution failed, drop and try again later
+                        open_gripper()
+                    else:
+                        # Check if box is really in the bucket
+                        gazebo_environment_snap = gazebo_environment
+                        cube_pos = gazebo_environment_snap.pose[gazebo_environment_snap.name.index(name)]
+                        bucket_pos = gazebo_environment_snap.pose[gazebo_environment_snap.name.index("bucket")]
+                        if not (cube_pos.position.x - bucket_pos.position.x)**2 + (cube_pos.position.y - bucket_pos.position.y)**2 > 0.14**2:
+                            print "[%f] Placed %s successfully in bucket" % (rospy.get_time(), name)
+                            redo_names.remove(name)
+        if len(failed_names) != 0:
+            print "[%f]Cubes that have failed: %s" % (rospy.get_time(), failed_names)
     except rospy.ROSInterruptException:
         pass
     except moveit_commander.MoveItCommanderException as e:
-        #print "Exception: %s" % e 
         pass
     
         

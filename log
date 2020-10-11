@@ -1,0 +1,112 @@
+pat@DESKTOP-8AD0L74:~/catkin_ws/src/jaco_pick_place$ rosrun hello_ros cube_spawn.py && rosrun jaco_pick_place pick-cubes_place-bucket.py 2>&1 pick_place.log
+Waiting for gazebo services...
+Got it.
+('Spawning model:%s', 'cube0')
+('Spawning model:%s', 'cube1')
+('Spawning model:%s', 'cube2')
+('Spawning model:%s', 'cube3')
+('Spawning model:%s', 'cube4')
+('Spawning model:%s', 'bucket')
+[ INFO] [1602431949.091724100, 791.855000000]: Loading robot model 'JacoOnTable'...
+[ INFO] [1602431949.108929400, 791.866000000]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[ WARN] [1602431950.257901300, 792.370000000]: Kinematics solver doesn't support #attempts anymore, but only a timeout.
+Please remove the parameter '/robot_description_kinematics/Arm/kinematics_solver_attempts' from your configuration.
+[ INFO] [1602431952.703017700, 793.544000000]: Ready to take commands for planning group Arm.
+/home/pat/catkin_ws/src/jaco_pick_place/scripts/pick-cubes_place-bucket.py:205: SyntaxWarning: The publisher should be created with an explicit keyword argument 'queue_size'. Please see http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers for more information.
+  moveit_msgs.msg.DisplayTrajectory)
+Sleeping for 5 seconds to let model_states be populated, then get positions for MoveIt collision objects
+[798.602000]pick_object_in_scene: Stopping residual movement to start picking process
+[798.772000]pick_object_in_scene: Opening gripper in preparation for approaching cube4
+[801.156000]pick_object_in_scene: Got position x:0.227237 y:0.105066 z:0.755576 as cube4 position
+[801.156000]pick_object_in_scene: Position setpoint above cube4: x:0.227237 y:0.105066 z:1.055576
+[801.156000]pick_object_in_scene: Opening gripper in preparation for approaching cube4
+[803.619000]pick_object_in_scene: Trying to execute movement to setpoint
+[809.646000]pick_object_in_scene: Movement executed successfully
+[809.646000]pick_object_in_scene: Planning cartesian trajectory to approach cube4 with desired movement from x1:0.219263 -> x2:0.227237 - y1:0.108464 -> y2:0.105066 - z1:1.059654 -> z2:0.925576
+[809.646000] Attempt 0 has fraction 1.000000
+[809.646000]pick_object_in_scene: Trying to execute planned trajectory, fraction is: 1.000000
+[810.936000]pick_object_in_scene: Cartesian Movement successful, current x:0.227301 y:0.105065 z:0.925186
+[810.936000]pick_object_in_scene: Closing gripper to pick up cube4
+[813.287000]place_object_in_scene: Stopping residual movement to start picking process
+[815.301000]place_object_in_scene: Position setpoint above bucket: x:0.532683 y:-0.232544 z:1.187028
+[815.301000]place_object_in_scene: Trying to execute movement to setpoint
+[822.094000]place_object_in_scene: Movement executed successfully
+[824.095000]place_object_in_scene: Opening gripper to place cube in bucket
+[828.485000] Placed cube4 successfully in bucket
+[828.485000]pick_object_in_scene: Stopping residual movement to start picking process
+[828.517000]pick_object_in_scene: Opening gripper in preparation for approaching cube3
+[830.907000]pick_object_in_scene: Got position x:0.150168 y:0.255652 z:0.755576 as cube3 position
+[830.907000]pick_object_in_scene: Position setpoint above cube3: x:0.150168 y:0.255652 z:1.055576
+[830.907000]pick_object_in_scene: Opening gripper in preparation for approaching cube3
+[833.357000]pick_object_in_scene: Trying to execute movement to setpoint
+[838.374000]pick_object_in_scene: Movement executed successfully
+[838.374000]pick_object_in_scene: Planning cartesian trajectory to approach cube3 with desired movement from x1:0.149779 -> x2:0.150168 - y1:0.251558 -> y2:0.255652 - z1:1.054475 -> z2:0.925576
+[838.424000] Attempt 0 has fraction 1.000000
+[838.424000]pick_object_in_scene: Trying to execute planned trajectory, fraction is: 1.000000
+[839.718000]pick_object_in_scene: Cartesian Movement successful, current x:0.150241 y:0.255619 z:0.925118
+[839.718000]pick_object_in_scene: Closing gripper to pick up cube3
+[842.122000]place_object_in_scene: Stopping residual movement to start picking process
+[844.229000]place_object_in_scene: Position setpoint above bucket: x:0.535533 y:-0.234991 z:1.187161
+[844.229000]place_object_in_scene: Trying to execute movement to setpoint
+[848.624000]place_object_in_scene: Movement executed successfully
+[850.635000]place_object_in_scene: Opening gripper to place cube in bucket
+[855.009000]pick_object_in_scene: Stopping residual movement to start picking process
+[855.033000]pick_object_in_scene: Opening gripper in preparation for approaching cube2
+[857.427000]pick_object_in_scene: Got position x:0.222594 y:0.407980 z:0.755577 as cube2 position
+[857.427000]pick_object_in_scene: Position setpoint above cube2: x:0.222594 y:0.407980 z:1.055577
+[857.427000]pick_object_in_scene: Opening gripper in preparation for approaching cube2
+[859.843000]pick_object_in_scene: Trying to execute movement to setpoint
+[865.623000]pick_object_in_scene: Movement executed successfully
+[865.623000]pick_object_in_scene: Planning cartesian trajectory to approach cube2 with desired movement from x1:0.224923 -> x2:0.222594 - y1:0.406606 -> y2:0.407980 - z1:1.056836 -> z2:0.925577
+[865.648000] Attempt 0 has fraction 1.000000
+[865.648000]pick_object_in_scene: Trying to execute planned trajectory, fraction is: 1.000000
+[866.929000]pick_object_in_scene: Cartesian Movement successful, current x:0.222661 y:0.407945 z:0.925031
+[866.929000]pick_object_in_scene: Closing gripper to pick up cube2
+[869.321000]place_object_in_scene: Stopping residual movement to start picking process
+[871.351000]place_object_in_scene: Position setpoint above bucket: x:0.538110 y:-0.237023 z:1.187278
+[871.351000]place_object_in_scene: Trying to execute movement to setpoint
+[876.230000]place_object_in_scene: Movement executed successfully
+[878.235000]place_object_in_scene: Opening gripper to place cube in bucket
+[882.622000] Placed cube2 successfully in bucket
+[882.622000]pick_object_in_scene: Stopping residual movement to start picking process
+[882.647000]pick_object_in_scene: Opening gripper in preparation for approaching cube1
+cube1 is out of reach
+[885.032000]pick_object_in_scene: Stopping residual movement to start picking process
+[885.093000]pick_object_in_scene: Opening gripper in preparation for approaching cube0
+[887.462000]pick_object_in_scene: Got position x:0.309438 y:0.382331 z:0.755577 as cube0 position
+[887.462000]pick_object_in_scene: Position setpoint above cube0: x:0.309438 y:0.382331 z:1.055577
+[887.462000]pick_object_in_scene: Opening gripper in preparation for approaching cube0
+[889.848000]pick_object_in_scene: Trying to execute movement to setpoint
+[893.227000]pick_object_in_scene: Movement executed successfully
+[893.227000]pick_object_in_scene: Planning cartesian trajectory to approach cube0 with desired movement from x1:0.305856 -> x2:0.309438 - y1:0.374292 -> y2:0.382331 - z1:1.058673 -> z2:0.925577
+[893.237000] Attempt 0 has fraction 1.000000
+[893.237000]pick_object_in_scene: Trying to execute planned trajectory, fraction is: 1.000000
+[894.377000]pick_object_in_scene: Cartesian Movement successful, current x:0.309491 y:0.382286 z:0.925174
+[894.377000]pick_object_in_scene: Closing gripper to pick up cube0
+[896.723000]place_object_in_scene: Stopping residual movement to start picking process
+[898.742000]place_object_in_scene: Position setpoint above bucket: x:0.540299 y:-0.238549 z:1.187386
+[898.742000]place_object_in_scene: Trying to execute movement to setpoint
+[902.869000]place_object_in_scene: Movement executed successfully
+[904.869000]place_object_in_scene: Opening gripper to place cube in bucket
+[909.247000] Placed cube0 successfully in bucket
+[909.247000]pick_object_in_scene: Stopping residual movement to start picking process
+[909.265000]pick_object_in_scene: Opening gripper in preparation for approaching cube3
+[911.627000]pick_object_in_scene: Got position x:0.084852 y:0.137791 z:0.755575 as cube3 position
+[911.627000]pick_object_in_scene: Position setpoint above cube3: x:0.084852 y:0.137791 z:1.055575
+[911.627000]pick_object_in_scene: Opening gripper in preparation for approaching cube3
+[914.224000]pick_object_in_scene: Trying to execute movement to setpoint
+[917.790000]pick_object_in_scene: Movement executed successfully
+[917.790000]pick_object_in_scene: Planning cartesian trajectory to approach cube3 with desired movement from x1:0.092080 -> x2:0.084852 - y1:0.137251 -> y2:0.137791 - z1:1.053198 -> z2:0.925575
+[917.801000] Attempt 0 has fraction -1.000000
+[917.811000] Attempt 1 has fraction 1.000000
+[917.811000]pick_object_in_scene: Trying to execute planned trajectory, fraction is: 1.000000
+[919.032000]pick_object_in_scene: Cartesian Movement successful, current x:0.084945 y:0.137790 z:0.925090
+[919.032000]pick_object_in_scene: Closing gripper to pick up cube3
+[921.387000]place_object_in_scene: Stopping residual movement to start picking process
+[923.408000]place_object_in_scene: Position setpoint above bucket: x:0.541403 y:-0.239270 z:1.187431
+[923.408000]place_object_in_scene: Trying to execute movement to setpoint
+[928.815000]place_object_in_scene: Movement executed successfully
+[930.817000]place_object_in_scene: Opening gripper to place cube in bucket
+[935.191000] Placed cube3 successfully in bucket
+[935.191000]Cubes that have failed: ['cube1']
+
